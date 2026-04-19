@@ -1,0 +1,125 @@
+# TechStackLens — Research Sources Registry
+# Priority order: lower number = higher signal quality
+# Budget cap: 5-7 sources per run
+
+sources:
+  - name: X (Twitter)
+    priority: 1
+    method: WebSearch
+    query: '"claude code" (plugin OR skill OR mcp) OR @AnthropicAI'
+    signal: Highest — new tools announced here first
+    status: active
+    last_tested: 2026-04-19
+    notes: Vercel, Figma, Playground, Expo plugins appeared here first
+
+  - name: Hacker News
+    priority: 2
+    method: WebSearch
+    query: 'site:hn.algolia.com "claude code"'
+    filter: last 30 days
+    signal: Strong second — community discussion surfaces quality tools
+    status: active
+    last_tested: 2026-04-19
+
+  - name: Claude Code Releases
+    priority: 3
+    method: WebFetch
+    url: https://github.com/anthropics/claude-code/releases
+    signal: Only source for native features — feeds overlap check
+    status: active
+    last_tested: 2026-04-19
+    notes: Scan for new slash commands, settings keys, native features
+
+  - name: Official Plugin Marketplace
+    priority: 4
+    method: WebFetch
+    url: https://github.com/anthropics/claude-plugins-official
+    path: plugins/
+    signal: Official — vetted by Anthropic
+    status: active
+    last_tested: 2026-04-19
+
+  - name: PulseMCP Directory
+    priority: 5
+    method: WebFetch
+    url: https://pulsemcp.com/servers
+    signal: Curated MCP server directory
+    status: active
+    last_tested: 2026-04-19
+
+  - name: skills.sh
+    priority: 6
+    method: WebFetch
+    url: https://skills.sh
+    signal: Largest directory — 91k+ skills, install count data
+    status: active
+    last_tested: 2026-04-19
+    notes: |
+      Also check:
+      - skills.sh/anthropics/skills (Anthropic official)
+      - Cross-platform: Claude Code, Cursor, Copilot, Windsurf
+      - Install count is stronger adoption signal than GitHub stars
+
+  - name: Awesome Claude Skills
+    priority: 7
+    method: WebFetch
+    url: https://github.com/travisvn/awesome-claude-skills
+    signal: Community curated — lower signal than X/HN
+    status: active
+    last_tested: 2026-04-19
+
+  - name: Awesome Claude Code
+    priority: 8
+    method: WebFetch
+    url: https://github.com/hesreallyhim/awesome-claude-code
+    signal: Community curated — lower signal than X/HN
+    status: active
+    last_tested: 2026-04-19
+
+# Scope-dependent sources (only when audit includes SaaS providers)
+provider_sources:
+  - name: Supabase Changelog
+    method: WebFetch
+    url: https://supabase.com/changelog
+    category: database
+    status: active
+
+  - name: Apollo Changelog
+    method: WebSearch
+    query: 'site:apollo.io changelog OR "what\'s new"'
+    category: enrichment
+    status: active
+
+  - name: Firecrawl Releases
+    method: WebFetch
+    url: https://github.com/mendableai/firecrawl/releases
+    category: web-scraping
+    status: active
+
+  - name: GitHub Advisory Database
+    method: WebSearch
+    query: 'site:github.com/advisories'
+    category: security
+    status: active
+
+# Broken sources — do not use
+broken_sources:
+  - name: Reddit
+    reason: Blocks WebSearch user agent (403)
+    last_tested: 2026-04-19
+
+  - name: mcp.so
+    reason: Returns 403 to WebFetch
+    last_tested: 2026-04-19
+
+# Anthropic docs — only fetch if user's goal mentions "what's new in Claude Code itself"
+conditional_sources:
+  - name: Anthropic Docs
+    method: WebFetch
+    url: https://docs.claude.com/en/docs/claude-code
+    condition: user goal mentions Claude Code updates
+
+  - name: Anthropic Blog
+    method: WebFetch
+    url: https://anthropic.com/news
+    condition: user goal mentions Claude Code updates

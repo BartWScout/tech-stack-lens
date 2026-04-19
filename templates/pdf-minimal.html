@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TechStackLens Report — {{DATE}}</title>
+<style>
+  @page { size: 210mm 297mm; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 52px 56px 128px;
+    font-size: 13px;
+    line-height: 1.65;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #000;
+    margin-bottom: 4px;
+  }
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #000;
+    margin-top: 36px;
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 18px;
+    margin-bottom: 8px;
+  }
+  .cover-date {
+    font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .cover-subtitle {
+    font-size: 15px;
+    color: #555;
+    margin-bottom: 28px;
+  }
+  .cover-divider {
+    width: 40px;
+    height: 2px;
+    background: #000;
+    margin: 20px 0 28px;
+  }
+  .card {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    page-break-inside: avoid;
+  }
+  .card-header {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 4px;
+  }
+  .card-type {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 10px;
+    color: #fff;
+    background: #333;
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .card-body { font-size: 13px; color: #333; }
+  .card-body p { margin-bottom: 6px; }
+  .example {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 11px;
+    background: #f0f0f0;
+    padding: 6px 10px;
+    border-radius: 3px;
+    margin: 6px 0;
+    color: #333;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #333;
+    color: #fff;
+    padding: 7px 10px;
+    text-align: left;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 11px;
+  }
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  tr:nth-child(even) td { background: #fafafa; }
+  .health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .health-item {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    page-break-inside: avoid;
+  }
+  .health-label {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .health-value {
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .green { color: #1a7f37; }
+  .amber { color: #9a6700; }
+  .red { color: #cf222e; }
+  .tag {
+    display: inline-block;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin: 2px 2px 2px 0;
+  }
+  .tag-install { background: #dafbe1; color: #116329; }
+  .tag-configure { background: #fff8c5; color: #4d2d00; }
+  .tag-fix { background: #ffebe9; color: #82071e; }
+  .tag-skip { background: #f0f0f0; color: #555; }
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #333;
+    color: #fff;
+    padding: 10px 56px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover-date">{{DATE}}</div>
+<h1>TechStackLens</h1>
+<div class="cover-subtitle">{{PROFILE_SUMMARY}}</div>
+<div class="cover-divider"></div>
+<p style="font-size: 14px; margin-bottom: 32px;">{{HEADLINE}}</p>
+
+{{CONTENT}}
+
+<div class="footer">
+  <span>TechStackLens &middot; {{DATE}}</span>
+  <span>github.com/BartWScout/tech-stack-lens</span>
+</div>
+
+</body>
+</html>

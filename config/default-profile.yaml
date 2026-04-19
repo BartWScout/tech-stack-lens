@@ -1,0 +1,160 @@
+# TechStackLens — Default Profile (CARNET Team)
+# This file defines which providers to audit and their expected env keys.
+# Key NAMES only — values are never stored here.
+
+team: CARNET
+wiki_path: /Users/bartek/projects/scouting-llm-wiki
+env_file: ~/projects/config/.env.shared
+
+audit_scope:
+  claude_code: true
+  saas_providers: true
+  databases: true
+  deployment: true
+  cross_tool: true
+  dependencies: true
+  env_vars: true
+
+# Provider registry — grouped by category
+providers:
+  # --- LLM Providers ---
+  - name: anthropic
+    env_key: ANTHROPIC_API_KEY
+    category: llm
+  - name: groq
+    env_key: GROQ_API_KEY
+    category: llm
+  - name: openrouter
+    env_key: OPENROUTER_API_KEY
+    category: llm
+  - name: google-gemini
+    env_key: GOOGLE_API_KEY
+    category: llm
+  - name: google-gemini-scout
+    env_key: SCOUT_GEMINI_API_KEY
+    category: llm
+  - name: azure-openai
+    env_key: AZURE_OPENAI_API_KEY
+    category: llm
+
+  # --- Search & Web Scraping ---
+  - name: tavily
+    env_key: TAVILY_API_KEY
+    category: web-scraping
+  - name: firecrawl
+    env_key: FIRECRAWL_API_KEY
+    category: web-scraping
+  - name: exa
+    env_key: EXA_API_KEY
+    category: web-scraping
+  - name: brightdata
+    env_key: BRIGHTDATA_API_KEY
+    category: web-scraping
+  - name: zyte
+    env_key: ZYTE_API_KEY
+    category: web-scraping
+  - name: scrapy-cloud
+    env_key: SCRAPY_CLOUD_API_KEY
+    category: web-scraping
+  - name: jina
+    env_key: JINA_API_KEY
+    category: web-scraping
+  - name: webscrapingai
+    env_key: WEBSCRAPINGAI_API_KEY
+    category: web-scraping
+  - name: extruct
+    env_key: EXTRUCT_API_KEY
+    category: web-scraping
+  - name: apify
+    env_key: APIFY_API_TOKEN
+    category: web-scraping
+  - name: browserbase
+    env_key: BROWSERBASE_API_KEY
+    category: web-scraping
+
+  # --- B2B Enrichment ---
+  - name: apollo
+    env_key: APOLLO_API_KEY
+    category: enrichment
+  - name: hunter
+    env_key: HUNTER_API_KEY
+    category: email-discovery
+
+  # --- Communication ---
+  - name: slack
+    env_key: SLACK_BOT_TOKEN
+    category: communication
+  - name: tally
+    env_key: TALLY_API_KEY
+    category: communication
+
+  # --- Databases ---
+  - name: supabase
+    env_key: SUPABASE_SECRET_API_KEY
+    category: database
+  - name: notion
+    env_key: NOTION_API_TOKEN
+    category: database
+
+  # --- Infrastructure ---
+  - name: sentry
+    env_key: SENTRY_AUTH_TOKEN
+    category: infrastructure
+  - name: cloudflare
+    env_key: CLOUDFLARE_API_TOKEN
+    category: infrastructure
+  - name: digitalocean
+    env_key: DIGITALOCEAN_ACCESS_TOKEN
+    category: infrastructure
+  - name: vercel
+    env_key: AI_GATEWAY_API_KEY
+    category: infrastructure
+
+  # --- Auth ---
+  - name: clerk
+    env_key: CLERK_SECRET_KEY
+    category: auth
+
+  # --- Dev Tooling ---
+  - name: github
+    env_key: GITHUB_PERSONAL_ACCESS_TOKEN
+    category: dev-tooling
+  - name: linear
+    env_key: LINEAR_API_KEY
+    category: dev-tooling
+  - name: context7
+    env_key: CONTEXT7_API_KEY
+    category: dev-tooling
+
+  # --- Research ---
+  - name: semantic-scholar
+    env_key: SEMANTIC_SCHOLAR_API_KEY
+    category: research
+  - name: zotero
+    env_key: ZOTERO_API_KEY
+    category: research
+
+  # --- Google Workspace ---
+  - name: google-sheets
+    env_key: GOOGLE_SHEETS_CLIENT_ID
+    category: workspace
+
+  # --- Knowledge Management ---
+  - name: obsidian
+    env_key: OBSIDIAN_LOCAL_REST_API_KEY
+    category: knowledge
+
+# Deployment targets to health-check
+deployment:
+  n8n:
+    health_url: https://carnetscout.app/healthz
+    host: 159.89.23.221
+  vercel:
+    method: mcp  # uses Vercel MCP if connected
+
+# Staleness thresholds
+stale_threshold_days: 30
+
+# Report defaults
+report_formats: [pdf, markdown]
+pdf_style: cream

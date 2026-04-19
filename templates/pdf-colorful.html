@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TechStackLens Report — {{DATE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @page { size: 210mm 297mm; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #fefefe;
+    color: #1e293b;
+    padding: 52px 56px 128px;
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 34px;
+    color: #0f172a;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: #4F8FFF;
+    margin-top: 32px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-top: 18px;
+    margin-bottom: 8px;
+  }
+  .cover-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .cover-subtitle {
+    font-size: 16px;
+    color: #64748b;
+    margin-bottom: 28px;
+  }
+  .cover-divider {
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #4F8FFF, #ffb070);
+    border-radius: 2px;
+    margin: 20px 0 28px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #4F8FFF;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    page-break-inside: avoid;
+  }
+  .card-header {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0f172a;
+    margin-bottom: 6px;
+  }
+  .card-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #fff;
+    background: linear-gradient(135deg, #4F8FFF, #6366f1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .card-body { font-size: 13px; color: #475569; }
+  .card-body p { margin-bottom: 6px; }
+  .example {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: #f1f5f9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 6px 0;
+    color: #334155;
+    border-left: 3px solid #ffb070;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+  th {
+    background: linear-gradient(135deg, #4F8FFF, #6366f1);
+    color: #fff;
+    padding: 8px 10px;
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  tr:nth-child(even) td { background: #f8fafc; }
+  .health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .health-item {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    page-break-inside: avoid;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .health-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .health-value {
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .green { color: #10b981; }
+  .amber { color: #f59e0b; }
+  .red { color: #ef4444; }
+  .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin: 2px 2px 2px 0;
+  }
+  .tag-install { background: #d1fae5; color: #065f46; }
+  .tag-configure { background: #fef3c7; color: #92400e; }
+  .tag-fix { background: #fee2e2; color: #991b1b; }
+  .tag-skip { background: #f1f5f9; color: #64748b; }
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, #4F8FFF, #ffb070);
+    color: #fff;
+    padding: 10px 56px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover-date">{{DATE}}</div>
+<h1>TechStackLens</h1>
+<div class="cover-subtitle">{{PROFILE_SUMMARY}}</div>
+<div class="cover-divider"></div>
+<p style="font-size: 15px; margin-bottom: 32px;">{{HEADLINE}}</p>
+
+{{CONTENT}}
+
+<div class="footer">
+  <span>TechStackLens &middot; {{DATE}}</span>
+  <span>github.com/BartWScout/tech-stack-lens</span>
+</div>
+
+</body>
+</html>
