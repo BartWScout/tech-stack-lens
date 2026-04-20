@@ -5,7 +5,7 @@ description: TechStackLens — Full-stack AI tooling audit. Audits Claude Code s
 
 # TechStackLens — Full-Stack AI Tooling Audit
 
-Periodic audit pass for a user's full technology stack. Nine sections:
+Periodic audit pass for a user's full technology stack. Ten sections:
 
 0. Profile the user
 1. Audit current setup (7 categories, deep)
@@ -15,6 +15,7 @@ Periodic audit pass for a user's full technology stack. Nine sections:
 4. Ask by number
 5. Install / configure approved tools
 6. Generate reports (PDF + Markdown + HTML)
+7. Wiki sync (write-path) — auto-generate/update provider notes in scouting-llm-wiki
 
 Never change anything without the user's explicit approval (see Step 4 for the two-confirmation flow). Match language to the user's tech level throughout.
 
@@ -422,6 +423,90 @@ Self-contained HTML file with inline CSS and vanilla JS for:
 - No external dependencies — works offline
 
 **Save to:** `~/Desktop/tech-stack-lens-[YYYY-MM-DD].html`
+
+---
+
+## Step 7 — Wiki Sync (Write-Path)
+
+Runs after Step 6. **Only if the wiki path exists and the user approves.**
+
+Check whether the wiki path from `config/default-profile.yaml` exists:
+```bash
+test -d "$WIKI_PATH" && echo "wiki found" || echo "no wiki"
+```
+
+If no wiki found, skip this step entirely. If found, ask via `AskUserQuestion`:
+- **Options:** `sync to wiki` · `skip wiki sync`
+
+### 7a. Provider Notes
+
+For each provider with an **INSTALL**, **CONFIGURE**, or **REPLACE** recommendation from Step 3:
+
+1. Check if `$WIKI_PATH/03-providers/provider-<name>.md` exists
+2. **If it does NOT exist** → generate a new file using the exact template from `templates/wiki-provider.md`. Populate ALL frontmatter fields:
+   - `type: provider`
+   - `provider: <name>`
+   - `category:` (from config/default-profile.yaml)
+   - `status: active`
+   - `free_tier_summary:` (from Step 2 research)
+   - `api_access:` yes/partial/no
+   - `mcp_support:` native/custom/none
+   - `source_refs:` (URLs from Step 2)
+   - `source_dates:` (dates from Step 2)
+   - `last_verified:` (today's date YYYY-MM-DD)
+   - `confidence: medium` (default for auto-generated)
+   - `review_cycle_days: 14`
+   - `tags: [provider, tech-stack-lens-generated]`
+
+   Fill all body sections: TLDR, Capabilities, Access model, API and integration, Fit for scouting workflow, Risks and caveats, Evidence.
+
+3. **If it DOES exist** → read the existing file, then:
+   - Update `last_verified` to today's date
+   - Append new evidence to the Evidence section (never overwrite existing evidence)
+   - If any findings contradict existing claims, add them under "Risks and caveats" with a `[contradiction]` tag
+   - **Never overwrite existing content without asking**
+
+4. Show the user a diff preview before writing. Ask via `AskUserQuestion`:
+   - **Options:** `write all` · `write <numbers>` · `skip`
+
+### 7b. Comparison Notes
+
+If 2+ providers in the same category were researched in Step 2:
+
+1. Check `$WIKI_PATH/06-comparisons/` for an existing comparison matching the scope
+2. **If found** → offer to append new data (never overwrite)
+3. **If not found** → offer to create `comparison-<scope>.md` using `templates/wiki-comparison.md`
+4. Populate: TLDR, verdict (best default / best low-cost / best enterprise), criteria matrix, evidence
+
+### 7c. Log Entry
+
+Append to `$WIKI_PATH/log.md` (never overwrite):
+
+```markdown
+## [YYYY-MM-DD] tech-stack-lens | audit
+
+- Scope: <audit scope from Step 0>
+- Providers audited: <count>
+- New notes created: <list>
+- Notes updated: <list>
+- Comparisons: <list or "none">
+- Report: ~/Desktop/tech-stack-lens-YYYY-MM-DD.pdf
+```
+
+### 7d. Index Updates
+
+- If a new `provider-<name>.md` was created → add entry to `$WIKI_PATH/03-providers/providers-index.md`
+- If new source evidence was gathered → add entry to `$WIKI_PATH/01-sources/sources-index.md`
+
+### Wiki Write Constraints
+
+- Frontmatter must match wiki template EXACTLY (Dataview dashboards depend on field names)
+- Use `[[folder/note-name]]` Obsidian wiki-link syntax
+- File naming: `provider-<lowercase-name>.md`
+- Every note needs: `source_refs`, `source_dates`, `last_verified`, `confidence`
+- Prefer updating existing notes over creating duplicates
+- Two-confirmation model applies to wiki writes too
+- Never modify files in `01-sources/` except frontmatter enrichment
 
 ---
 
