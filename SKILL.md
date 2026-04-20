@@ -180,6 +180,93 @@ Parse `~/projects/config/.env.shared` key names (never values). For each key:
 
 ---
 
+## Step 1.5 — Wiki Intelligence Prefetch
+
+Runs between Step 1 (Audit) and Step 2 (Research). **Only if the wiki path exists.**
+
+Check whether `$WIKI_PATH` (from `config/default-profile.yaml`) exists. If not, skip entirely and proceed to Step 2.
+
+### 1.5a. Parse Wiki Structure
+
+```bash
+# Read the wiki index for current structure
+cat "$WIKI_PATH/index.md"
+
+# Count existing provider profiles
+ls "$WIKI_PATH/03-providers/provider-"*.md 2>/dev/null | wc -l
+
+# Count existing comparisons
+ls "$WIKI_PATH/06-comparisons/comparison-"*.md 2>/dev/null | wc -l
+```
+
+### 1.5b. Read Provider Profiles
+
+For each provider in the audit scope (from `config/default-profile.yaml`), check if a wiki profile exists:
+
+```bash
+test -f "$WIKI_PATH/03-providers/provider-<name>.md" && echo "exists" || echo "missing"
+```
+
+For existing profiles, read and extract:
+- `status` (from frontmatter)
+- `last_verified` (from frontmatter)
+- `confidence` (from frontmatter)
+- `free_tier_summary` (from frontmatter)
+- `mcp_support` (from frontmatter)
+- TLDR section (first paragraph)
+- Any CARNET-specific recommendations from "Fit for scouting workflow"
+
+### 1.5c. Read Comparisons
+
+Read relevant comparison files in `$WIKI_PATH/06-comparisons/`:
+- Extract verdict (best default / best low-cost / best enterprise)
+- Extract criteria matrix
+- Note the `last_verified` date
+
+### 1.5d. Read Decision Records
+
+Scan `$WIKI_PATH/07-decisions/` for ADRs affecting provider strategy:
+- Provider selection decisions
+- Architecture decisions that constrain tool choices
+- Policy decisions (e.g., cost-mode defaults, data governance)
+
+### 1.5e. Staleness Classification
+
+For every `provider-*.md` file found, classify by `last_verified` date:
+
+| Classification | Condition | Action |
+|---------------|-----------|--------|
+| **Current** | last_verified < 14 days ago | Skip in Step 2 research (save budget) |
+| **Aging** | 14–30 days since last_verified | Include in Step 2 but lower priority |
+| **Stale** | >30 days since last_verified | Flag for re-verification, prioritize in Step 2 |
+| **Missing date** | No last_verified field | Treat as stale |
+
+### 1.5f. Build Wiki Context Block
+
+Assemble a context block that feeds into Steps 2 and 3:
+
+```
+WIKI INTELLIGENCE:
+- Providers with current profiles (skip research): [list]
+- Providers with stale profiles (prioritize research): [list]
+- Providers missing from wiki (new research needed): [list]
+- Existing comparison verdicts (use as baseline): [list]
+- Active ADRs constraining choices: [list]
+- Contradictions between live audit (Step 1) and wiki claims: [list]
+```
+
+**How the context block affects downstream steps:**
+
+- **Step 2 (Research):** Skip recently-verified providers to save research budget. Prioritize stale and missing providers.
+- **Step 3 (Filter):** Cite existing wiki comparison verdicts rather than re-deriving them. Surface contradictions between live audit data and wiki claims.
+- **Step 7 (Wiki Sync):** Know which profiles need creation vs. update.
+
+Print a summary:
+
+> *"Wiki: X provider profiles found (Y current, Z stale). A comparisons, B ADRs. Skipping research for C recently-verified providers."*
+
+---
+
 ## Step 2 — Research What's New (Parallel, Budget-Capped, Ordered by Signal)
 
 Fire research in parallel with a **budget cap: 5–7 sources per run.** Ordered by signal quality:
