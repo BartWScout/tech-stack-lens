@@ -153,6 +153,30 @@ Read `config/default-profile.yaml` (or the user's custom profile) for the provid
 4. Read Copilot settings: `copilot-instructions.md` in project dirs
 5. Diff: report which tools have MCP configured, which skills/rules are synced, any drift
 
+**Cross-tool compatibility matrix:**
+
+Build a table showing which capabilities exist across which tools:
+
+```
+CROSS-TOOL MATRIX
+──────────────────────────────────────────────────────
+  Capability        Claude Code   Cursor   Copilot
+──────────────────────────────────────────────────────
+  MCP servers           13          8        -
+  Skills/rules          69          3        1
+  Plugins               4           -        -
+  Hooks                 2           -        -
+  Rulesync synced       -          yes      yes
+  Config drift          -          none     minor
+──────────────────────────────────────────────────────
+```
+
+Report:
+- Which MCP servers are shared across tools (via rulesync or manual config)
+- Which skills/rules are synced vs. tool-specific
+- Config drift: differences between tool configs that should be identical
+- Rulesync sync status: last sync date, any pending changes
+
 ### Category 6: Dependencies
 
 ```bash
@@ -264,6 +288,32 @@ WIKI INTELLIGENCE:
 Print a summary:
 
 > *"Wiki: X provider profiles found (Y current, Z stale). A comparisons, B ADRs. Skipping research for C recently-verified providers."*
+
+### 1.5g. Freshness Dashboard
+
+Display a visual freshness dashboard for ALL `provider-*.md` files in the wiki (not just those in audit scope):
+
+```
+WIKI FRESHNESS DASHBOARD
+─────────────────────────────────────────
+  Current (<14d)    ████████████  34
+  Aging (14-30d)    ████          12
+  Stale (>30d)      ██████        18
+  Missing date      █              3
+─────────────────────────────────────────
+  Total: 67 provider profiles
+```
+
+After displaying, ask via `AskUserQuestion`:
+
+> "Found N stale profiles. Want to re-verify any?"
+> - **Options:** `re-verify all stale` · `pick by number` · `skip`
+
+If the user picks re-verification:
+1. For each selected stale provider, run a targeted WebSearch for latest status
+2. Update `last_verified` in the wiki profile frontmatter to today's date
+3. Append new evidence if found
+4. Show what changed before writing
 
 ---
 
