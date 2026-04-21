@@ -1,7 +1,17 @@
 ---
 name: tech-stack-lens
+version: 0.6.0
 description: TechStackLens — Full-stack AI tooling audit. Audits Claude Code setup, SaaS providers, databases, deployment, cross-tool configs, dependencies, and environment variables. Generates PDF/Markdown/HTML reports. Bidirectional sync with scouting-llm-wiki. Use for periodic health checks, discovering new tools, stack maintenance, or whenever the user wants to audit their AI/dev tooling — including loose phrasings like "check my stack", "what's broken", "audit my tools", or "run tech-stack-lens".
 ---
+
+<!--
+Versioning: bump `version` on every commit that changes skill behavior.
+- 0.1.x–0.5.x: phases 1–5 (initial build, wiki read/write, dashboards, docs)
+- 0.6.0: recursive wiki path resolution, research fallback ladder, Step 5 dry-run,
+         profile persistence, extracted scripts, test fixtures (2026-04-21)
+Stamp the version into the header of every generated report.
+-->
+
 
 # TechStackLens — Full-Stack AI Tooling Audit
 
@@ -54,6 +64,33 @@ Every message the skill sends during a run should be scannable at a glance. Stru
 ## Step 0 — Verify Context, Then Profile
 
 **First, surface what you already think you know about the user.** Never treat memory files, CLAUDE.md, directory names, or prior session summaries as ground truth — they're guesses that need confirmation.
+
+### Persisted profile (fast path)
+
+Before asking anything, check for `config/user-profile.yaml` in the skill directory. If it exists, read the saved profile and show it compactly:
+
+> **Your saved profile (from `config/user-profile.yaml`, saved YYYY-MM-DD):**
+> - Use case: `<use_case>`
+> - Tech level: `<tech_level>`
+> - Default goal: `<default_goal>`
+> - PDF style: `<pdf_style>`
+> - Audit scope: `<audit_scope>`
+> - Notes: `<notes, if any>`
+
+Then ask via `AskUserQuestion`:
+- **Options:** `still accurate — run with this` · `change something` · `ignore and ask fresh`
+
+Branch:
+- *still accurate* → skip the 5 profile questions entirely, proceed to Step 1 with the saved profile.
+- *change something* → ask which field(s), update the file, continue.
+- *ignore and ask fresh* → discard the saved profile for this run only (don't delete the file), fall through to the full question flow below.
+
+If `config/user-profile.yaml` does **not** exist, skip the fast path and go straight to the context + 5 questions below. After the questions are answered, offer via `AskUserQuestion`:
+- **Options:** `save profile for next time` · `don't save`
+
+When the user says save, write the answers to `config/user-profile.yaml` (the file is git-ignored; see `config/user-profile.yaml.example` for the schema).
+
+### Inferred context (shown on fresh runs OR when the user picks *ignore and ask fresh*)
 
 Show the user a compact list of what you inferred:
 
@@ -225,10 +262,17 @@ Check whether `$WIKI_PATH` (from `config/default-profile.yaml`) exists. If not, 
 
 **Discovery rule.** The wiki may use a flat layout (`03-providers/provider-*.md`) OR a layered layout (`03-providers/_layers/layer-N-*/…`, `04-providers-monitoring/…`, etc.). Always discover recursively — never assume flat structure.
 
-```bash
-# Read the wiki index for current structure
-cat "$WIKI_PATH/index.md"
+Prefer the extracted script for discovery + freshness:
 
+```bash
+python3 scripts/wiki_scan.py --wiki "$WIKI_PATH"
+python3 scripts/wiki_scan.py --wiki "$WIKI_PATH" --json   # machine-readable
+python3 scripts/wiki_scan.py --wiki "$WIKI_PATH" --list stale
+```
+
+The script handles both layouts and emits the freshness dashboard directly. If you need raw counts inline:
+
+```bash
 # Count existing provider profiles (recursive — finds files across all subdirs)
 find "$WIKI_PATH" -type f -name 'provider-*.md' 2>/dev/null | wc -l
 
@@ -337,9 +381,24 @@ Branch:
 
 If the user picks re-verification:
 1. For each selected stale provider, run a targeted WebSearch (with MCP fallback — see Step 2) for latest status
-2. Update `last_verified` in the wiki profile frontmatter to today's date
+2. Update `last_verified` in the wiki profile frontmatter to today's date. Use the extracted script rather than hand-editing:
+   ```bash
+   python3 scripts/backfill_last_verified.py --wiki "$WIKI_PATH" --providers <name1,name2> --apply
+   python3 scripts/backfill_last_verified.py --wiki "$WIKI_PATH" --all-stale --dry-run   # preview
+   ```
 3. Append new evidence if found
 4. Show what changed before writing
+
+### One-off: migrate orphan files (no frontmatter)
+
+Run once per wiki, when `wiki_scan.py` reports a large `missing-date` bucket. Orphans lack the frontmatter Dataview dashboards need; this script injects a minimal valid block while preserving the body.
+
+```bash
+python3 scripts/migrate_frontmatter.py --wiki "$WIKI_PATH" --dry-run --show-sample
+python3 scripts/migrate_frontmatter.py --wiki "$WIKI_PATH" --apply
+```
+
+Always dry-run first. The script infers provider name from the first heading, category from the layer path, and sets `last_verified` to file mtime (not today) so the dashboard reflects reality. Files already containing frontmatter are skipped.
 
 ---
 

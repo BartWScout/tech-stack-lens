@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local user state (see config/user-profile.yaml.example for schema)
+config/user-profile.yaml
+
+# OS
+.DS_Store

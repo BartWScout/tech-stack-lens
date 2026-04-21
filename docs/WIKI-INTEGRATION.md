@@ -87,18 +87,23 @@ Every provider note must include:
 ```yaml
 type: provider
 provider: <name>
-category: <category>
-status: active|experimental|deprecated
+layer: <layer-N-slug>          # e.g. layer-7-development
+category: <category>           # development | devops | storage | memory | observability | orchestration | enrichment | discovery | delivery
+status: active                 # active | experimental | deprecated
 free_tier_summary: <text>
-api_access: yes|partial|no
-mcp_support: native|custom|none
+api_access: yes                # yes | partial | no
+mcp_support: none              # native | custom | none
 source_refs: [<urls>]
 source_dates: [<dates>]
 last_verified: YYYY-MM-DD
-confidence: low|medium|high
+confidence: medium             # low | medium | high
 review_cycle_days: 14
 tags: [provider, tech-stack-lens-generated]
 ```
+
+The `layer:` field is required — 100% of existing provider notes use it and the migration script (`scripts/migrate_frontmatter.py`) writes it when backfilling orphans. Notes without `layer:` are inconsistent with the rest of the wiki.
+
+Dataview dashboards (`09-dashboards/dashboard-provider-status.md`, `dashboard-evidence-freshness.md`, `dashboard-contradictions-and-gaps.md`) read these keys directly — field names must match exactly.
 
 ### Log format
 

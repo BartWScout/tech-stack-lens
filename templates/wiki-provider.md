@@ -1,15 +1,16 @@
 ---
 type: provider
-provider:
-category: startup-intelligence|email-discovery|enrichment|verification|warehouse
-status: active|experimental|deprecated
+provider: <name>
+layer: <layer-N-slug>  # e.g. layer-7-development, layer-5-observability
+category: <category>   # e.g. development, devops, storage, memory, observability, orchestration, enrichment, discovery
+status: active         # active | experimental | deprecated
 free_tier_summary:
-api_access: yes|partial|no
-mcp_support: native|custom|none
+api_access: yes        # yes | partial | no
+mcp_support: none      # native | custom | none
 source_refs: []
 source_dates: []
-last_verified:
-confidence: medium
+last_verified:         # YYYY-MM-DD
+confidence: medium     # low | medium | high
 review_cycle_days: 14
 tags: [provider]
 ---

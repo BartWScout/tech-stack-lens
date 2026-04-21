@@ -1,0 +1,24 @@
+# TechStackLens — Persisted User Profile
+#
+# Copy this file to `config/user-profile.yaml` (git-ignored locally) and the
+# skill will read it at the start of every run, skipping the 5 profile
+# questions and showing only: "Your profile from last time — still accurate?"
+#
+# Answer `no` to update any field; answer `yes` to proceed straight to the
+# audit. Delete this file to re-enter full profile mode.
+
+use_case: mixed  # coding | writing | running-a-business | research | creative-work | learning | mixed | other
+tech_level: comfortable-dev  # brand-new | basics | comfortable-dev | power-user
+default_goal: optimize-stack  # show-whats-new | health-check | fix-broken | optimize-stack | other
+pdf_style: colorful  # warm-cream | plain-minimal | colorful | compare-all-three | dont-care
+audit_scope: full  # full | claude-code-only | saas-providers | databases | deployment | dependencies | custom
+
+# Optional: free-form notes the skill should remember across runs. Surface in
+# the Step 0 context block alongside the profile.
+notes: |
+  - Tech scout at CARNET, PhD student at UPC.
+  - Working projects: carnet-scouting, carnet-radar, carnet-radar-ui.
+  - Wiki at ~/projects/scouting-llm-wiki uses layered layout.
+
+# Saved on: YYYY-MM-DD (update when you edit this file manually)
+saved_on: 2026-04-21
