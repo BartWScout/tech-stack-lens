@@ -6,6 +6,12 @@ team: CARNET
 wiki_path: /Users/bartek/projects/scouting-llm-wiki
 env_file: ~/projects/config/.env.shared
 
+# Wiki layout: 'flat' means provider-*.md sits directly under 03-providers/.
+# 'layered' means files are nested under 03-providers/_layers/layer-N-*/ and
+# siblings like 04-providers-monitoring/. The skill resolves paths via
+# recursive find() regardless of this hint — it is informational only.
+wiki_layout: auto  # auto | flat | layered
+
 audit_scope:
   claude_code: true
   saas_providers: true

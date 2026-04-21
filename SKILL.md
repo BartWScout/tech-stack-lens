@@ -106,11 +106,11 @@ claude plugin marketplace list
 # MCP servers — connection states: ✓ Connected, ! Needs authentication (normal), ✗ failed (broken)
 claude mcp list
 
-# Installed skills (user-level)
-ls -la ~/.claude/skills/ 2>/dev/null
+# Installed skills (user-level) — find every SKILL.md, including nested container repos
+find ~/.claude/skills -maxdepth 4 -name SKILL.md 2>/dev/null
 
 # Installed skills (project-level, if inside a repo)
-ls -la ./.claude/skills/ 2>/dev/null
+find ./.claude/skills -maxdepth 4 -name SKILL.md 2>/dev/null
 
 # Claude Code version
 claude --version
@@ -121,6 +121,17 @@ claude --version
 - MCP servers showing `! Needs authentication` are **healthy, not broken** — normal for OAuth-based servers. Surface under a *"sign in to activate"* note
 - Skill folders without valid `SKILL.md` or with broken frontmatter → candidate for **FIX** or **REMOVE**
 - Marketplaces that 404 → candidate for **REMOVE**
+
+**Container-skill detection.** Some skill repos don't have a root `SKILL.md`; instead they nest real skills at `skills/<name>/SKILL.md` (examples: `playwright-skill`, `claude-scientific-skills`, `prompt-architect`). Treat these as **containers**, not broken skills.
+
+Resolution rules:
+1. If `~/.claude/skills/<repo>/SKILL.md` exists → it's a flat skill. Use directly.
+2. If `~/.claude/skills/<repo>/SKILL.md` is missing BUT `~/.claude/skills/<repo>/skills/*/SKILL.md` exists → it's a container. For each nested skill:
+   - Offer to create a symlink: `ln -s ~/.claude/skills/<repo>/skills/<name> ~/.claude/skills/<name>`
+   - Log the container root separately under *"container skills (not user-facing)"* so it isn't flagged as broken
+3. If neither exists AND no nested `SKILL.md` → genuine broken, candidate for **FIX** or **REMOVE**
+
+Print a container summary line: *"Containers: N repos, M nested skills resolved via symlink."*
 
 ### Category 2: SaaS Provider Health
 
@@ -212,24 +223,31 @@ Check whether `$WIKI_PATH` (from `config/default-profile.yaml`) exists. If not, 
 
 ### 1.5a. Parse Wiki Structure
 
+**Discovery rule.** The wiki may use a flat layout (`03-providers/provider-*.md`) OR a layered layout (`03-providers/_layers/layer-N-*/…`, `04-providers-monitoring/…`, etc.). Always discover recursively — never assume flat structure.
+
 ```bash
 # Read the wiki index for current structure
 cat "$WIKI_PATH/index.md"
 
-# Count existing provider profiles
-ls "$WIKI_PATH/03-providers/provider-"*.md 2>/dev/null | wc -l
+# Count existing provider profiles (recursive — finds files across all subdirs)
+find "$WIKI_PATH" -type f -name 'provider-*.md' 2>/dev/null | wc -l
 
-# Count existing comparisons
-ls "$WIKI_PATH/06-comparisons/comparison-"*.md 2>/dev/null | wc -l
+# Count existing comparisons (recursive)
+find "$WIKI_PATH" -type f -name 'comparison-*.md' 2>/dev/null | wc -l
 ```
+
+`ls` with a glob breaks in two ways here: it doesn't recurse into `_layers/` and sibling dirs, and in zsh an unmatched glob can silently return 0 or the literal pattern. Use `find` (or `pathlib.rglob` from Python) everywhere provider/comparison files are counted or resolved.
 
 ### 1.5b. Read Provider Profiles
 
-For each provider in the audit scope (from `config/default-profile.yaml`), check if a wiki profile exists:
+For each provider in the audit scope (from `config/default-profile.yaml`), locate any matching wiki file anywhere under the wiki root:
 
 ```bash
-test -f "$WIKI_PATH/03-providers/provider-<name>.md" && echo "exists" || echo "missing"
+# Returns 0..N paths; locate by basename, not by assumed subdir
+find "$WIKI_PATH" -type f -name "provider-<name>.md" 2>/dev/null
 ```
+
+If multiple matches come back (a provider may be referenced in both `03-providers/` and `04-providers-monitoring/`), prefer the file inside `03-providers/` as canonical; include any sibling matches as auxiliary references.
 
 For existing profiles, read and extract:
 - `status` (from frontmatter)
@@ -291,7 +309,7 @@ Print a summary:
 
 ### 1.5g. Freshness Dashboard
 
-Display a visual freshness dashboard for ALL `provider-*.md` files in the wiki (not just those in audit scope):
+Discover all provider files recursively (`find "$WIKI_PATH" -type f -name 'provider-*.md'`) and display a visual freshness dashboard covering every file found — not just providers in audit scope:
 
 ```
 WIKI FRESHNESS DASHBOARD
@@ -304,13 +322,21 @@ WIKI FRESHNESS DASHBOARD
   Total: 67 provider profiles
 ```
 
+Also print, per bucket, where the files live (e.g. *"Stale: 14 in 03-providers/_layers/, 4 in 04-providers-monitoring/"*). This surfaces layered-wiki breakdowns without forcing the user to ask.
+
 After displaying, ask via `AskUserQuestion`:
 
-> "Found N stale profiles. Want to re-verify any?"
-> - **Options:** `re-verify all stale` · `pick by number` · `skip`
+> "Found N stale profiles. What next?"
+> - **Options:** `show me the list` · `re-verify all stale` · `pick by number` · `skip`
+
+Branch:
+- *show me the list* → print a numbered table of every stale/missing-date file with path, provider name, and days since `last_verified`. Then re-ask the question (without the `show me the list` option).
+- *re-verify all stale* → queue all stale files for re-verification.
+- *pick by number* → after showing the list once, accept comma-separated numbers.
+- *skip* → do nothing.
 
 If the user picks re-verification:
-1. For each selected stale provider, run a targeted WebSearch for latest status
+1. For each selected stale provider, run a targeted WebSearch (with MCP fallback — see Step 2) for latest status
 2. Update `last_verified` in the wiki profile frontmatter to today's date
 3. Append new evidence if found
 4. Show what changed before writing
@@ -357,6 +383,22 @@ Fire research in parallel with a **budget cap: 5–7 sources per run.** Ordered 
 - **mcp.so** — returns 403 to WebFetch
 
 **Broken-source handling.** If any source 403s, times out, or returns a user-agent block, note it once and move on. Flag persistently-broken sources in the report.
+
+### Fallback order when WebSearch / WebFetch fail
+
+WebSearch gets rate-limited (hourly quota) and WebFetch can 403. When either fails mid-run, don't abort — fall through this ladder in order. Each step is a real substitute, not a retry of the same mechanism:
+
+1. **WebSearch + WebFetch** — primary. Fastest, highest coverage.
+2. **Tavily MCP** (`mcp__claude_ai_Tavily__tavily_search`, `…__tavily_extract`, `…__tavily_crawl`) — handles the same URLs with an independent user agent + quota. Best substitute for general search and page extraction.
+3. **GitHub MCP** (`mcp__plugin_github_github__search_repositories`, `…__search_code`, `…__get_file_contents`, `…__list_releases`) — best for marketplace/awesome-list/release-note sources that live on GitHub. Faster and more reliable than scraping the web UI.
+4. **Exa / Firecrawl / Brightdata** (if configured) — specialized crawlers; use for JS-heavy pages when Tavily's extract returns thin content.
+5. **`ctx7` CLI** — only for library/framework documentation questions, not general discovery.
+
+**Rules of the ladder:**
+- Declare the fall in one line (`→ WebSearch rate-limited · falling back to Tavily MCP`) so the user sees the degradation.
+- Don't retry the failed layer in the same run — it's quota-bound, not flaky.
+- Stay inside the 5–7 source budget. Each fallback query still counts as one source.
+- If you reach layer 4+ and still have no signal, stop researching that source and note it in the report under *"research gaps this run."*
 
 For each candidate capture: name, type (plugin / skill / MCP / SaaS), one-line purpose, install URL or command, last updated date, adoption signal, and cross-tool compatibility.
 
@@ -445,6 +487,37 @@ Wait for the second `go` before running Step 5. **Two confirmations minimum. Nev
 ---
 
 ## Step 5 — Install / Configure Approved Tools
+
+### Dry-run option
+
+After the user's first numbered pick in Step 4 (but before the second `go`), offer a dry-run via `AskUserQuestion`:
+
+> "Show the full install plan without executing?"
+> - **Options:** `dry-run first` · `skip dry-run, proceed to preview`
+
+If the user picks `dry-run first`, print the complete plan as a fenced block that is **non-executable** — every command prefixed with `# DRY-RUN ·` so it's clear nothing ran:
+
+```
+# DRY-RUN · Step 5 plan (nothing executed yet)
+# 1 — sonarqube (plugin)
+#   claude plugin install sonarqube@claude-plugins-official
+#   post-install: /sonarqube:integrate, reload plugins
+# 2 — hue (skill)
+#   git clone https://github.com/author/hue ~/.claude/skills/hue
+#   verify SKILL.md frontmatter
+# 3 — supabase-cli (cli)
+#   brew install supabase/tap/supabase
+#   supabase --version
+# 4 — OPENAI_API_KEY (env)
+#   append placeholder to ~/projects/config/.env.shared
+#   no network calls
+```
+
+Include: every command that would run, every file that would be written, every env key that would be appended, and any follow-up manual steps the user will own.
+
+Then re-ask the Step 4 confirmation: *"Reply `go` to execute, or tell me which numbers to drop."* The dry-run does not replace the second `go` — it extends the pre-install preview.
+
+### Handlers
 
 Handle each type:
 
@@ -575,12 +648,20 @@ test -d "$WIKI_PATH" && echo "wiki found" || echo "no wiki"
 If no wiki found, skip this step entirely. If found, ask via `AskUserQuestion`:
 - **Options:** `sync to wiki` · `skip wiki sync`
 
+### Path-resolution rule (applies to every sub-step below)
+
+The wiki may use a layered layout (`03-providers/_layers/layer-N-*/`, `04-providers-monitoring/`, etc.). Before any write:
+
+1. **Locate** existing files with `find "$WIKI_PATH" -type f -name 'provider-<name>.md'` (not a flat-path `test -f`).
+2. **Pick canonical directory for new files** by reading `$WIKI_PATH/index.md` to learn the intended layer/category. If the index gives no hint, default to `$WIKI_PATH/03-providers/` for new `provider-*.md` and `$WIKI_PATH/06-comparisons/` for `comparison-*.md`.
+3. **Never overwrite a file found at an unexpected path** — if `find` returns a match outside the expected directory, show the user the found path and ask before writing.
+
 ### 7a. Provider Notes
 
 For each provider with an **INSTALL**, **CONFIGURE**, or **REPLACE** recommendation from Step 3:
 
-1. Check if `$WIKI_PATH/03-providers/provider-<name>.md` exists
-2. **If it does NOT exist** → generate a new file using the exact template from `templates/wiki-provider.md`. Populate ALL frontmatter fields:
+1. Run `find "$WIKI_PATH" -type f -name "provider-<name>.md"` to check if a profile already exists anywhere in the wiki.
+2. **If no match** → generate a new file at `$WIKI_PATH/03-providers/provider-<name>.md` (or the canonical directory per the rule above), using the exact template from `templates/wiki-provider.md`. Populate ALL frontmatter fields:
    - `type: provider`
    - `provider: <name>`
    - `category:` (from config/default-profile.yaml)
@@ -610,9 +691,9 @@ For each provider with an **INSTALL**, **CONFIGURE**, or **REPLACE** recommendat
 
 If 2+ providers in the same category were researched in Step 2:
 
-1. Check `$WIKI_PATH/06-comparisons/` for an existing comparison matching the scope
+1. Run `find "$WIKI_PATH" -type f -name "comparison-*.md"` and filter to ones matching the scope
 2. **If found** → offer to append new data (never overwrite)
-3. **If not found** → offer to create `comparison-<scope>.md` using `templates/wiki-comparison.md`
+3. **If not found** → offer to create `comparison-<scope>.md` in `$WIKI_PATH/06-comparisons/` (or the canonical directory per the path-resolution rule) using `templates/wiki-comparison.md`
 4. Populate: TLDR, verdict (best default / best low-cost / best enterprise), criteria matrix, evidence
 
 ### 7c. Log Entry
@@ -632,8 +713,8 @@ Append to `$WIKI_PATH/log.md` (never overwrite):
 
 ### 7d. Index Updates
 
-- If a new `provider-<name>.md` was created → add entry to `$WIKI_PATH/03-providers/providers-index.md`
-- If new source evidence was gathered → add entry to `$WIKI_PATH/01-sources/sources-index.md`
+- If a new `provider-<name>.md` was created → find the providers index with `find "$WIKI_PATH" -type f -name 'providers-index.md'` and append. Default location when none exists: `$WIKI_PATH/03-providers/providers-index.md`.
+- If new source evidence was gathered → find the sources index the same way. Default location when none exists: `$WIKI_PATH/01-sources/sources-index.md`.
 
 ### Wiki Write Constraints
 
