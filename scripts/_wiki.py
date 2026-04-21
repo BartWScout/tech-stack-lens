@@ -68,6 +68,16 @@ def find_providers(wiki_root: Path) -> list[Path]:
     return sorted(p for p in wiki_root.rglob("provider-*.md") if p.is_file())
 
 
+def has_valid_provider_frontmatter(provider: "Provider") -> bool:
+    """True only if the file has a frontmatter block AND `type: provider`.
+
+    A file with only `title:` or other stray keys is treated as malformed, not
+    migrated — Dataview dashboards filter on `type = "provider"` and skip anything
+    without it.
+    """
+    return provider.has_frontmatter and str(provider.frontmatter.get("type", "")).strip() == "provider"
+
+
 def split_frontmatter(text: str) -> tuple[dict | None, str]:
     """Return (frontmatter_dict, body). Returns (None, full_text) if no frontmatter."""
     if not text.startswith("---\n"):
