@@ -186,13 +186,25 @@ def main() -> int:
         rel = path.relative_to(args.wiki)
         print(f"  [{action:>18}] {rel}  ·  {note}")
 
-        if args.show_sample and not sample_printed and action in ("would-inject", "injected"):
-            sample_printed = True
-            print("\n--- sample rendered frontmatter (inject path) ---")
-            provider = load_provider(path)
-            fm = build_frontmatter(path, provider.name)
-            print(render_frontmatter(fm))
-            print("--- end sample ---\n")
+        if args.show_sample and not sample_printed:
+            if action in ("would-inject", "injected"):
+                sample_printed = True
+                print("\n--- sample rendered frontmatter (inject path) ---")
+                provider = load_provider(path)
+                fm = build_frontmatter(path, provider.name)
+                print(render_frontmatter(fm))
+                print("--- end sample ---\n")
+            elif action in ("would-normalize", "normalized"):
+                sample_printed = True
+                print("\n--- sample (normalize path: only `type:` line rewritten) ---")
+                text = path.read_text(encoding="utf-8")
+                if text.startswith("---\n"):
+                    try:
+                        end = text.index("\n---\n", 4)
+                        print(text[: end + 5])
+                        print("--- end sample ---\n")
+                    except ValueError:
+                        pass
 
     mode_label = "APPLIED" if args.apply else "DRY-RUN"
     verb = "written" if args.apply else "would be written"

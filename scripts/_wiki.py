@@ -109,7 +109,10 @@ def _parse_simple_yaml(raw: str) -> dict:
             continue
         if ": " in line or line.endswith(":"):
             if current_list is not None and current_key is not None:
-                out[current_key] = current_list
+                # Only flush if items were actually collected — an empty `key:`
+                # with no following `  - ` items is a scalar, not an empty list.
+                if current_list:
+                    out[current_key] = current_list
                 current_list = None
             key, _, value = line.partition(":")
             key = key.strip()
@@ -128,8 +131,8 @@ def _parse_simple_yaml(raw: str) -> dict:
             out[key] = value.strip('"').strip("'")
             current_list = None
     if current_list is not None and current_key is not None:
-        # flush trailing block list
-        if out.get(current_key) in ("", []):
+        # flush trailing block list — only if items were collected
+        if current_list and out.get(current_key) in ("", []):
             out[current_key] = current_list
     return out
 
