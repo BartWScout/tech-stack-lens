@@ -91,11 +91,15 @@ def split_frontmatter(text: str) -> tuple[dict | None, str]:
     return _parse_simple_yaml(raw_yaml), body
 
 
+_BLOCK_ITEM_RE = re.compile(r"^\s+-\s(.*)")
+
+
 def _parse_simple_yaml(raw: str) -> dict:
     """Minimal YAML reader for frontmatter. Handles scalars, inline lists, block lists.
 
     Not a general YAML parser. Good enough for what this skill emits and for the
-    frontmatter shape seen in scouting-llm-wiki.
+    frontmatter shape seen in scouting-llm-wiki. Accepts any consistent block-list
+    indentation (1-space, 2-space, 4-space, etc.).
     """
     out: dict = {}
     current_key: str | None = None
@@ -104,8 +108,9 @@ def _parse_simple_yaml(raw: str) -> dict:
         line = raw_line.rstrip()
         if not line or line.lstrip().startswith("#"):
             continue
-        if line.startswith("  - ") and current_list is not None:
-            current_list.append(line[4:].strip().strip('"').strip("'"))
+        m = _BLOCK_ITEM_RE.match(line)
+        if m and current_list is not None:
+            current_list.append(m.group(1).strip().strip('"').strip("'"))
             continue
         if ": " in line or line.endswith(":"):
             if current_list is not None and current_key is not None:

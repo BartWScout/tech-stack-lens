@@ -26,11 +26,25 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import re
+
 sys.path.insert(0, str(Path(__file__).parent))
 from _wiki import classify_freshness, find_providers, load_provider  # noqa: E402
 
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+_CONFIG_FILE = _SCRIPTS_DIR.parent / "config" / "default-profile.yaml"
+_WIKI_PATH_RE = re.compile(r"^\s*wiki_path:\s*(.+)$")
 
-DEFAULT_WIKI = Path("/Users/bartek/projects/scouting-llm-wiki")
+
+def _wiki_from_config() -> Path | None:
+    """Read wiki_path from config/default-profile.yaml at runtime."""
+    if not _CONFIG_FILE.exists():
+        return None
+    for line in _CONFIG_FILE.read_text(encoding="utf-8").splitlines():
+        m = _WIKI_PATH_RE.match(line)
+        if m:
+            return Path(m.group(1).strip()).expanduser()
+    return None
 
 
 def scan(wiki_root: Path) -> dict:
@@ -106,8 +120,9 @@ def render_list(result: dict, bucket: str) -> str:
 
 
 def main() -> int:
+    default_wiki = _wiki_from_config() or Path("/Users/bartek/projects/scouting-llm-wiki")
     parser = argparse.ArgumentParser(description="Scan the wiki for provider freshness.")
-    parser.add_argument("--wiki", type=Path, default=DEFAULT_WIKI)
+    parser.add_argument("--wiki", type=Path, default=default_wiki)
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of the dashboard")
     parser.add_argument("--list", choices=["stale", "missing-date", "aging", "current"], help="Also list files in this bucket")
     args = parser.parse_args()
